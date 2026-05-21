@@ -156,7 +156,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       <span>W<span id="wave">1</span>/3</span>
       <span>👾<span id="ecount">0</span></span>
     </span>
-    <button onclick="openSel()" style="margin-left:auto;font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#777;cursor:pointer">↺</button>
+    <button onclick="openSel()" style="margin-left:auto;font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#777;cursor:pointer">↺ Held</button>
+    <button id="toggle-mobile" onclick="applyMobileMode(!isMobile)" title="Mobile/PC umschalten" style="font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#aaa;cursor:pointer">📱</button>
   </div>
 
   <!-- Skill bar (desktop) -->
@@ -218,19 +219,18 @@ const WW=2400,WH=1800,MAX_WAVES=3;
 // ═══════════════════════════════════════════════════════
 // TOUCH DETECTION — show mobile controls
 // ═══════════════════════════════════════════════════════
-let isMobile=false;
-function detectTouch(){
-  isMobile=('ontouchstart' in window)||navigator.maxTouchPoints>0;
-  if(isMobile){
-    document.getElementById('mobile-controls').style.display='block';
-    document.getElementById('skbar-wrap').style.display='none';
-  }
+// Robust mobile detection:
+// - matchMedia pointer:coarse = real touch device (finger, not mouse)
+// - We never auto-switch on first touchstart (hybrid laptops have touch too)
+// - User can manually toggle with the button in HUD
+let isMobile = window.matchMedia('(pointer: coarse)').matches;
+
+function applyMobileMode(on) {
+  isMobile = on;
+  document.getElementById('mobile-controls').style.display = on ? 'block' : 'none';
+  document.getElementById('skbar-wrap').style.display    = on ? 'none'  : 'flex';
 }
-window.addEventListener('load',detectTouch);
-// also detect on first touch in case it's a hybrid device
-window.addEventListener('touchstart',()=>{
-  if(!isMobile){isMobile=true;document.getElementById('mobile-controls').style.display='block';document.getElementById('skbar-wrap').style.display='none';}
-},{once:true,passive:true});
+applyMobileMode(isMobile);
 
 // ═══════════════════════════════════════════════════════
 // JOYSTICK
