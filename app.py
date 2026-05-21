@@ -1,5 +1,5 @@
-from pathlib import Path
 import streamlit as st
+import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Hero Clash", page_icon="⚡", layout="wide")
 
@@ -367,6 +367,4 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-html_file = Path("hero_clash_game.html").resolve()
-html_file.write_text(GAME_HTML, encoding="utf-8")
-st.iframe(html_file.as_uri(), height=700, scrolling=False)
+components.html(GAME_HTML, height=700, scrolling=False)
