@@ -386,13 +386,12 @@ const HEROES=[
 // ═══════════════════════════════════════════════════════
 // GAME STATE
 // ═══════════════════════════════════════════════════════
-let G={},selIdx=null,animId=null,unlockedHeroes=new Set([0]);
+let G={},selIdx=null,animId=null,unlockedHeroes=new Set([0]),totalVictories=0;
 
 function checkHeroUnlocks(){
-  if(!G||!G.hero)return;
   const nextHeroIndex=unlockedHeroes.size;
-  const scoreNeeded=nextHeroIndex*100;
-  if(G.score>=scoreNeeded&&nextHeroIndex<HEROES.length){
+  const winsNeeded=nextHeroIndex*3;
+  if(totalVictories>=winsNeeded&&nextHeroIndex<HEROES.length){
     unlockedHeroes.add(nextHeroIndex);
     showMsg('🔓 Neuer Held freigeschaltet: '+HEROES[nextHeroIndex].name+'!');
   }
@@ -410,7 +409,7 @@ function buildGrid(){
   HEROES.forEach((h,i)=>{
     const unlocked=unlockedHeroes.has(i);
     const cc=document.createElement('div');cc.className='hcard'+(unlocked?'':' locked');if(i===selIdx&&unlocked)cc.classList.add('sel');
-    cc.innerHTML='<div class="ci" style="'+(unlocked?'':'opacity:.4')+'">'+h.icon+'</div><div class="cn">'+h.name+'</div><div class="cr">'+h.role+'</div>'+(unlocked?'':`<div style="font-size:6px;color:#aaa;margin-top:2px">@${i*100}</div>`);
+    cc.innerHTML='<div class="ci" style="'+(unlocked?'':'opacity:.4')+'">'+h.icon+'</div><div class="cn">'+h.name+'</div><div class="cr">'+h.role+'</div>'+(unlocked?'':`<div style="font-size:6px;color:#aaa;margin-top:2px">${i*3} Siege</div>`);
     if(unlocked)cc.onclick=()=>{document.querySelectorAll('.hcard').forEach(x=>x.classList.remove('sel'));cc.classList.add('sel');selIdx=i;document.getElementById('ptxt').textContent='⚡ '+h.passive;document.getElementById('gobtn').classList.add('active');}
     else cc.style.opacity='0.5';
     g.appendChild(cc);
@@ -611,8 +610,7 @@ function update(){
   G.enemies=G.enemies.filter(e=>e.hp>0);
   G.particles=G.particles.filter(pt=>{pt.wx+=pt.vx;pt.wy+=pt.vy;pt.life--;pt.vx*=.88;pt.vy*=.88;return pt.life>0;});
   if(p.hp<=0){p.hp=0;G.gameOver=true;}
-  if(G.enemies.length===0){G.wave++;if(G.wave>MAX_WAVES){G.stars=calculateStars();G.won=true;return;}showMsg('Welle '+G.wave+'/'+MAX_WAVES+'!');spawnWave(G.wave);p.hp=Math.min(p.maxHp,p.hp+20);}
-  checkHeroUnlocks();
+  if(G.enemies.length===0){G.wave++;if(G.wave>MAX_WAVES){G.stars=calculateStars();G.won=true;totalVictories++;checkHeroUnlocks();return;}showMsg('Welle '+G.wave+'/'+MAX_WAVES+'!');spawnWave(G.wave);p.hp=Math.min(p.maxHp,p.hp+20);}
   updateHud();
 }
 
