@@ -474,7 +474,7 @@ function spawnWave(w){
   }
 }
 
-function loop(){update();draw();if(!G.gameOver&&!G.won)animId=requestAnimationFrame(loop);else{draw();showMsg(G.won?`🏆 SIEG! ${'⭐'.repeat(G.stars)}`:'💀 NIEDERLAGE!');setTimeout(openSel,2500);}}
+function loop(){update();draw();if(!G.gameOver&&!G.won)animId=requestAnimationFrame(loop);else{draw();showMsg(G.won?`🏆 EPISCHER SIEG! ${'⭐'.repeat(G.stars)}`:'💀 NIEDERLAGE!');setTimeout(openSel,2500);}}
 
 // ═══════════════════════════════════════════════════════
 // UPDATE — combined PC + Mobile input
