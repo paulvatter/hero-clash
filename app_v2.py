@@ -334,7 +334,6 @@ function genWorld(){
   }
   for(let i=0;i<6;i++){const h2=Math.random()>.5,pos=RI(100,h2?WH-100:WW-100);wObjs.push({type:'path',horiz:h2,pos,width:22+Math.random()*12});}
   for(let i=0;i<12;i++){const rx=R(40,70),ry=R(28,50);wObjs.push({type:'water',wx:R(rx,WW-rx),wy:R(ry,WH-ry),rx,ry});}
-  for(let i=0;i<80;i++)wObjs.push({type:'rock',wx:R(30,WW-30),wy:R(30,WH-30),r:R(8,18),angle:R(0,Math.PI),color:'#6b6560',lit:'#9e9590'});
   for(let i=0;i<150;i++)wObjs.push({type:'bush',wx:R(20,WW-20),wy:R(20,WH-20),r:R(9,15),color:'#1b4332',lit:'#2d6a4f'});
   for(let i=0;i<200;i++){const r=R(18,32);wObjs.push({type:'tree',wx:R(r,WW-r),wy:R(r,WH-r),r,color:['#1b4332','#2d6a4f','#1a3a2a','#14532d','#166534'][RI(0,4)]});}
   for(let i=0;i<22;i++){const w=R(45,90),h=R(40,70);wObjs.push({type:'building',wx:R(w/2+30,WW-w/2-30),wy:R(h/2+30,WH-h/2-30),w,h,color:['#4a4a5a','#5a4a3a','#3a3a4a','#6a5a4a','#3d3d3d'][RI(0,4)]});}
@@ -630,7 +629,6 @@ function drawStaticObjs(){
   vis.forEach(o=>{
     const ox=sxf(o.wx),oy=syf(o.wy);
     if(o.type==='lamp'){C.strokeStyle='#546e7a';C.lineWidth=3;C.beginPath();C.moveTo(ox,oy+14);C.lineTo(ox,oy-28);C.stroke();C.beginPath();C.moveTo(ox,oy-28);C.lineTo(ox+10,oy-32);C.stroke();C.fillStyle='#fff9c4';C.beginPath();C.arc(ox+10,oy-33,4,0,Math.PI*2);C.fill();C.fillStyle='rgba(255,249,196,.18)';C.beginPath();C.arc(ox+10,oy-33,18,0,Math.PI*2);C.fill();}
-    else if(o.type==='rock'){C.fillStyle='rgba(0,0,0,.22)';C.beginPath();C.ellipse(ox+3,oy+4,o.r*1.1,o.r*.55,.2,0,Math.PI*2);C.fill();C.fillStyle=o.color;C.beginPath();C.ellipse(ox,oy,o.r,o.r*.7,o.angle,0,Math.PI*2);C.fill();C.fillStyle=o.lit;C.beginPath();C.ellipse(ox-o.r*.25,oy-o.r*.2,o.r*.55,o.r*.3,o.angle-.3,0,Math.PI*2);C.fill();}
     else if(o.type==='bush'){C.fillStyle='rgba(0,0,0,.2)';C.beginPath();C.ellipse(ox+2,oy+4,o.r*.9,o.r*.4,0,0,Math.PI*2);C.fill();C.fillStyle=o.color;C.beginPath();C.arc(ox-o.r*.3,oy,o.r*.75,0,Math.PI*2);C.fill();C.beginPath();C.arc(ox+o.r*.3,oy+1,o.r*.7,0,Math.PI*2);C.fill();C.fillStyle=o.lit;C.beginPath();C.arc(ox,oy-o.r*.3,o.r*.55,0,Math.PI*2);C.fill();}
     else if(o.type==='tree'){
       C.fillStyle='rgba(0,0,0,.2)';C.beginPath();C.ellipse(ox+o.r*.4,oy+o.r*.6,o.r*.9,o.r*.35,.2,0,Math.PI*2);C.fill();
