@@ -136,6 +136,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   font-size:12px;
 }
 #btn-shoot:active,#btn-shoot.pressed{background:rgba(200,0,0,.7);}
+#star-display{font-size:13px;font-weight:700;color:#ffd700;display:flex;align-items:center;gap:4px;}
+#star-count{font-size:18px;line-height:1;}
 /* Skill buttons */
 #btn-s1{grid-column:1;grid-row:2;border-color:#FFD700;color:#FFD700}
 #btn-s2{grid-column:2;grid-row:2;border-color:#ab47bc;color:#e1bee7}
@@ -153,7 +155,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <span id="hptxt" style="font-size:10px;color:#aaa;min-width:50px">100/100</span>
     <span style="font-size:10px;color:#aaa;display:flex;gap:5px">
       <span>⭐<span id="score">0</span></span>
-      <span>🌟<span id="star-count">0</span></span>
+      <span id="star-display">🌟<span id="star-count">0</span></span>
       <span>W<span id="wave">1</span>/3</span>
       <span>👾<span id="ecount">0</span></span>
     </span>
