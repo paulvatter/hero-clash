@@ -351,6 +351,12 @@ function isSolid(x,y,r){
   }
   return x<20||x>WW-20||y<20||y>WH-20;
 }
+function isWater(x,y){
+  for(const o of wObjs){
+    if(o.type==='water'&&((x-o.wx)/o.rx)**2+((y-o.wy)/o.ry)**2<1)return true;
+  }
+  return false;
+}
 
 // ═══════════════════════════════════════════════════════
 // HEROES
@@ -548,7 +554,7 @@ function update(){
   G.bullets=G.bullets.filter(b=>{
     b.wx+=Math.cos(b.ang)*b.spd;b.wy+=Math.sin(b.ang)*b.spd;
     if(b.wx<0||b.wx>WW||b.wy<0||b.wy>WH)return false;
-    if(isSolid(b.wx,b.wy,3))return false;
+    if(isSolid(b.wx,b.wy,3)&&!isWater(b.wx,b.wy))return false;
     if(b.friendly){
       let hit=false;
       for(let i=G.enemies.length-1;i>=0;i--){
