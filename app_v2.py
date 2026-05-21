@@ -386,7 +386,17 @@ const HEROES=[
 // ═══════════════════════════════════════════════════════
 // GAME STATE
 // ═══════════════════════════════════════════════════════
-let G={},selIdx=null,animId=null;
+let G={},selIdx=null,animId=null,unlockedHeroes=new Set([0]);
+
+function checkHeroUnlocks(){
+  if(!G||!G.hero)return;
+  const nextHeroIndex=unlockedHeroes.size;
+  const scoreNeeded=nextHeroIndex*100;
+  if(G.score>=scoreNeeded&&nextHeroIndex<HEROES.length){
+    unlockedHeroes.add(nextHeroIndex);
+    showMsg('🔓 Neuer Held freigeschaltet: '+HEROES[nextHeroIndex].name+'!');
+  }
+}
 
 function openSel(){
   if(animId){cancelAnimationFrame(animId);animId=null;}
@@ -398,9 +408,11 @@ function openSel(){
 function buildGrid(){
   const g=document.getElementById('hgrid');g.innerHTML='';
   HEROES.forEach((h,i)=>{
-    const cc=document.createElement('div');cc.className='hcard';if(i===selIdx)cc.classList.add('sel');
-    cc.innerHTML='<div class="ci">'+h.icon+'</div><div class="cn">'+h.name+'</div><div class="cr">'+h.role+'</div>';
-    cc.onclick=()=>{document.querySelectorAll('.hcard').forEach(x=>x.classList.remove('sel'));cc.classList.add('sel');selIdx=i;document.getElementById('ptxt').textContent='⚡ '+h.passive;document.getElementById('gobtn').classList.add('active');};
+    const unlocked=unlockedHeroes.has(i);
+    const cc=document.createElement('div');cc.className='hcard'+(unlocked?'':' locked');if(i===selIdx&&unlocked)cc.classList.add('sel');
+    cc.innerHTML='<div class="ci" style="'+(unlocked?'':'opacity:.4')+'">'+h.icon+'</div><div class="cn">'+h.name+'</div><div class="cr">'+h.role+'</div>'+(unlocked?'':`<div style="font-size:6px;color:#aaa;margin-top:2px">@${i*100}</div>`);
+    if(unlocked)cc.onclick=()=>{document.querySelectorAll('.hcard').forEach(x=>x.classList.remove('sel'));cc.classList.add('sel');selIdx=i;document.getElementById('ptxt').textContent='⚡ '+h.passive;document.getElementById('gobtn').classList.add('active');}
+    else cc.style.opacity='0.5';
     g.appendChild(cc);
   });
 }
@@ -443,7 +455,7 @@ function initGame(idx){
   G={hero,p:{wx:px,wy:py,hp:hero.hp,maxHp:hero.hp,spd:hero.spd,
     shielded:0,invisible:0,armor:false,regenTimer:0,shotCd:0,
     critCount:0,dodgeCd:0,legAng:0,walkAnim:0,moving:false},
-    bullets:[],enemies:[],particles:[],keys:{},wave:1,score:0,stars:0,hits:0,damageTaken:0,lightningTimer:600,lightningFlash:0,lightningX:0,lightningY:0,gameOver:false,won:false};
+    bullets:[],enemies:[],particles:[],keys:{},wave:1,score:0,stars:0,hits:0,damageTaken:0,lightningTimer:1200,lightningFlash:0,lightningX:0,lightningY:0,gameOver:false,won:false};
   hero.init(G);cam.x=px-W/2;cam.y=py-H/2;
   spawnWave(1);buildSkBar();updateMobileSkillLabels();updateHud();
   if(animId)cancelAnimationFrame(animId);loop();
@@ -600,6 +612,7 @@ function update(){
   G.particles=G.particles.filter(pt=>{pt.wx+=pt.vx;pt.wy+=pt.vy;pt.life--;pt.vx*=.88;pt.vy*=.88;return pt.life>0;});
   if(p.hp<=0){p.hp=0;G.gameOver=true;}
   if(G.enemies.length===0){G.wave++;if(G.wave>MAX_WAVES){G.stars=calculateStars();G.won=true;return;}showMsg('Welle '+G.wave+'/'+MAX_WAVES+'!');spawnWave(G.wave);p.hp=Math.min(p.maxHp,p.hp+20);}
+  checkHeroUnlocks();
   updateHud();
 }
 
