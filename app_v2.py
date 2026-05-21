@@ -136,6 +136,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   font-size:12px;
 }
 #btn-shoot:active,#btn-shoot.pressed{background:rgba(200,0,0,.7);}
+#star-display{font-size:13px;font-weight:700;color:#ffd700;display:flex;align-items:center;gap:4px;}
+#star-count{font-size:18px;line-height:1;}
 /* Skill buttons */
 #btn-s1{grid-column:1;grid-row:2;border-color:#FFD700;color:#FFD700}
 #btn-s2{grid-column:2;grid-row:2;border-color:#ab47bc;color:#e1bee7}
@@ -153,6 +155,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <span id="hptxt" style="font-size:10px;color:#aaa;min-width:50px">100/100</span>
     <span style="font-size:10px;color:#aaa;display:flex;gap:5px">
       <span>⭐<span id="score">0</span></span>
+      <span id="star-display">🌟<span id="star-count">0</span></span>
       <span>W<span id="wave">1</span>/3</span>
       <span>👾<span id="ecount">0</span></span>
     </span>
@@ -435,7 +438,7 @@ function initGame(idx){
   G={hero,p:{wx:px,wy:py,hp:hero.hp,maxHp:hero.hp,spd:hero.spd,
     shielded:0,invisible:0,armor:false,regenTimer:0,shotCd:0,
     critCount:0,dodgeCd:0,legAng:0,walkAnim:0,moving:false},
-    bullets:[],enemies:[],particles:[],keys:{},wave:1,score:0,gameOver:false,won:false};
+    bullets:[],enemies:[],particles:[],keys:{},wave:1,score:0,stars:0,hits:0,damageTaken:0,gameOver:false,won:false};
   hero.init(G);cam.x=px-W/2;cam.y=py-H/2;
   spawnWave(1);buildSkBar();updateMobileSkillLabels();updateHud();
   if(animId)cancelAnimationFrame(animId);loop();
@@ -471,7 +474,7 @@ function spawnWave(w){
   }
 }
 
-function loop(){update();draw();if(!G.gameOver&&!G.won)animId=requestAnimationFrame(loop);else{draw();showMsg(G.won?'🏆 SIEG!':'💀 NIEDERLAGE!');setTimeout(openSel,2500);}}
+function loop(){update();draw();if(!G.gameOver&&!G.won)animId=requestAnimationFrame(loop);else{draw();showMsg(G.won?`🏆 EPISCHER SIEG! ${'⭐'.repeat(G.stars)}`:'💀 NIEDERLAGE!');setTimeout(openSel,2500);}}
 
 // ═══════════════════════════════════════════════════════
 // UPDATE — combined PC + Mobile input
@@ -556,6 +559,7 @@ function update(){
           if(h.name==='Solara'&&p.hp/p.maxHp>.7)dmg=Math.round(dmg*1.2);
           if(b.burn)e.burned=120;if(b.slow)e.frozen=120;
           e.hp-=dmg;parts(e.wx,e.wy,b.col,5);
+          G.hits++;
           if(!b.pierce)hit=true;if(e.hp<=0){G.score+=10;G.enemies.splice(i,1);}if(hit)break;
         }
       }
@@ -564,7 +568,7 @@ function update(){
       if(Math.hypot(b.wx-p.wx,b.wy-p.wy)<14){
         if(p.invisible>0){}
         else if(p.shielded>0){parts(p.wx,p.wy,'#29b6f6',6);}
-        else{let dmg=Math.round(p.maxHp/16);if(h.name==='Stahlherz')dmg=Math.max(0,dmg-3);if(h.name==='Phantom'&&Math.random()<.3)return false;p.hp-=dmg;parts(p.wx,p.wy,'#ff5252',5);}
+        else{let dmg=Math.round(p.maxHp/16);if(h.name==='Stahlherz')dmg=Math.max(0,dmg-3);if(h.name==='Phantom'&&Math.random()<.3)return false;G.damageTaken+=dmg;p.hp-=dmg;parts(p.wx,p.wy,'#ff5252',5);}
         return false;
       }
       return true;
@@ -582,14 +586,22 @@ function update(){
     if(Math.hypot(e.wx-p.wx,e.wy-p.wy)<16){
       if(p.invisible>0)return;if(p.shielded>0){parts(p.wx,p.wy,'#29b6f6',5);return;}
       let dmg=Math.round(p.maxHp/16);if(h.name==='Stahlherz')dmg=Math.max(0,dmg-3);if(h.name==='Phantom'&&Math.random()<.3)return;
-      p.hp-=dmg;parts(p.wx,p.wy,'#ff5252',4);
+      G.damageTaken+=dmg;p.hp-=dmg;parts(p.wx,p.wy,'#ff5252',4);
     }
   });
   G.enemies=G.enemies.filter(e=>e.hp>0);
   G.particles=G.particles.filter(pt=>{pt.wx+=pt.vx;pt.wy+=pt.vy;pt.life--;pt.vx*=.88;pt.vy*=.88;return pt.life>0;});
   if(p.hp<=0){p.hp=0;G.gameOver=true;}
-  if(G.enemies.length===0){G.wave++;if(G.wave>MAX_WAVES){G.won=true;return;}showMsg('Welle '+G.wave+'/'+MAX_WAVES+'!');spawnWave(G.wave);p.hp=Math.min(p.maxHp,p.hp+20);}
+  if(G.enemies.length===0){G.wave++;if(G.wave>MAX_WAVES){G.stars=calculateStars();G.won=true;return;}showMsg('Welle '+G.wave+'/'+MAX_WAVES+'!');spawnWave(G.wave);p.hp=Math.min(p.maxHp,p.hp+20);}
   updateHud();
+}
+
+function calculateStars(){
+  if(!G) return 0;
+  const hitScore=Math.min(1, G.hits/20);
+  const defenseScore=1-Math.min(1, G.damageTaken/(G.p.maxHp*1.5));
+  const stars=Math.round(1+hitScore+defenseScore);
+  return Math.max(1, Math.min(3, stars));
 }
 
 function firePlayerBullet(){
@@ -714,6 +726,7 @@ function updateHud(){
   document.getElementById('hpfill').style.width=(p.hp/p.maxHp*100)+'%';
   document.getElementById('hptxt').textContent=Math.max(0,Math.round(p.hp))+'/'+p.maxHp;
   document.getElementById('score').textContent=G.score;
+  document.getElementById('star-count').textContent=G.stars;
   document.getElementById('wave').textContent=G.wave;
   document.getElementById('ecount').textContent=G.enemies.length;
   document.getElementById('hname').textContent=G.hero.icon+' '+G.hero.name;
