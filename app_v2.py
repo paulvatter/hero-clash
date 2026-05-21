@@ -136,8 +136,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   font-size:12px;
 }
 #btn-shoot:active,#btn-shoot.pressed{background:rgba(200,0,0,.7);}
-#star-display{font-size:13px;font-weight:700;color:#ffd700;display:flex;align-items:center;gap:4px;}
-#star-count{font-size:18px;line-height:1;}
+#star-display{font-size:18px;font-weight:700;color:#ffd700;display:flex;align-items:center;gap:6px;}
+#star-count{font-size:24px;line-height:1;}
 /* Skill buttons */
 #btn-s1{grid-column:1;grid-row:2;border-color:#FFD700;color:#FFD700}
 #btn-s2{grid-column:2;grid-row:2;border-color:#ab47bc;color:#e1bee7}
