@@ -443,7 +443,7 @@ function initGame(idx){
   G={hero,p:{wx:px,wy:py,hp:hero.hp,maxHp:hero.hp,spd:hero.spd,
     shielded:0,invisible:0,armor:false,regenTimer:0,shotCd:0,
     critCount:0,dodgeCd:0,legAng:0,walkAnim:0,moving:false},
-    bullets:[],enemies:[],particles:[],keys:{},wave:1,score:0,stars:0,hits:0,damageTaken:0,gameOver:false,won:false};
+    bullets:[],enemies:[],particles:[],keys:{},wave:1,score:0,stars:0,hits:0,damageTaken:0,lightningTimer:600,lightningFlash:0,lightningX:0,lightningY:0,gameOver:false,won:false};
   hero.init(G);cam.x=px-W/2;cam.y=py-H/2;
   spawnWave(1);buildSkBar();updateMobileSkillLabels();updateHud();
   if(animId)cancelAnimationFrame(animId);loop();
@@ -531,6 +531,8 @@ function update(){
   if(p.shielded>0)p.shielded--;if(p.invisible>0)p.invisible--;if(p.shielded===0)p.armor=false;
   if(p.dodgeCd>0)p.dodgeCd--;
   if(h.name==='Terra'){p.regenTimer++;if(p.regenTimer>=60){p.regenTimer=0;p.hp=Math.min(p.maxHp,p.hp+1);}}
+  if(G.lightningTimer>0)G.lightningTimer--;
+  if(G.lightningTimer<=0){triggerLightning();G.lightningTimer=600;}
 
   // Update skill cooldowns + button states
   h.skills.forEach((sk,i)=>{
@@ -614,6 +616,14 @@ function firePlayerBullet(){
   if(h.name==='Starlance'){p.critCount++;if(p.critCount>=3){dmg=Math.round(dmg*1.5);p.critCount=0;}}
   G.bullets.push({wx:p.wx,wy:p.wy,ang:aimAng,spd:h.bSpd,dmg,friendly:true,col:h.bColor,burn:h.name==='Pyra',slow:h.name==='Glacius'});
 }
+function triggerLightning(){
+  const x=40+Math.random()*(WW-80),y=40+Math.random()*(WH-80),r=90;
+  G.lightningFlash=12;G.lightningX=x;G.lightningY=y;
+  G.enemies.forEach(e=>{if(Math.hypot(e.wx-x,e.wy-y)<r){e.hp-=26;parts(e.wx,e.wy,'#81d4fa',10);}});
+  G.enemies=G.enemies.filter(e=>{if(e.hp<=0){G.score+=10;return false;}return true;});
+  for(let i=0;i<20;i++){const a=Math.random()*Math.PI*2,dist=10+Math.random()*r*.6;parts(x+Math.cos(a)*dist,y+Math.sin(a)*dist,'#bbdefb',1);}
+  showMsg('⚡ Blitz!');
+}
 
 // ═══════════════════════════════════════════════════════
 // DRAW
@@ -688,7 +698,12 @@ function drawEnemy(e){
 }
 
 function draw(){
-  C.clearRect(0,0,W,H);drawTerrain();drawStaticObjs();
+  C.clearRect(0,0,W,H);drawTerrain();
+  if(G.lightningFlash>0){C.save();C.globalAlpha=(G.lightningFlash/12)*.35;C.fillStyle='#bbdefb';C.fillRect(0,0,W,H);C.restore();
+    C.save();C.strokeStyle='rgba(255,255,255,0.9)';C.lineWidth=3;C.beginPath();const lx=sxf(G.lightningX),ly=syf(G.lightningY);C.moveTo(lx,0);C.lineTo(lx,ly*0.35);C.lineTo(lx+18,ly*0.4);C.lineTo(lx-22,ly*0.52);C.lineTo(lx+12,ly*0.6);C.lineTo(lx,ly);C.stroke();C.restore();
+    G.lightningFlash--;
+  }
+  drawStaticObjs();
   G.particles.forEach(pt=>{C.globalAlpha=pt.life/pt.maxLife;C.beginPath();C.arc(sxf(pt.wx),syf(pt.wy),pt.r,0,Math.PI*2);C.fillStyle=pt.col;C.fill();C.globalAlpha=1;});
   G.bullets.forEach(b=>{
     const bx=sxf(b.wx),by=syf(b.wy);if(bx<-10||bx>W+10||by<-10||by>H+10)return;
