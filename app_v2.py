@@ -380,7 +380,9 @@ const HEROES=[
   {name:'Stahlherz',icon:'🦾',role:'Tank',hcol:'#37474f',bpCol:'#eceff1',hp:140,spd:2.3,bColor:'#cfd8dc',bDmg:24,bSpd:8,passive:'Metallkörper: -3 Schaden, kein Rückstoß',
    skills:[{name:'Titanpanzer',icon:'🛡️',key:'1',cd:0,maxCd:280,use:g=>{g.p.shielded=300;g.p.armor=true;showMsg('🛡️ Titanpanzer!')}},{name:'Stahlwalze',icon:'⚙️',key:'2',cd:0,maxCd:160,use:g=>bigShot('#b0bec5',40,5)},{name:'Metallsturm',icon:'💠',key:'3',cd:0,maxCd:320,use:g=>radial(10,'#cfd8dc',24)},{name:'Stahlsturm',icon:'⚙️',key:'4',cd:0,maxCd:420,use:g=>doAoe(140,70,'#90a4ae')}],init:s=>{}},
   {name:'Nox',icon:'🌑',role:'Dunkel',hcol:'#4527a0',bpCol:'#d1c4e9',hp:82,spd:3.1,bColor:'#b39ddb',bDmg:20,bSpd:10,passive:'Unter 40% HP: +40% Schaden',
-   skills:[{name:'Schattenform',icon:'👁️',key:'1',cd:0,maxCd:260,use:g=>{g.p.invisible=150;showMsg('👁️ Schattenform!')}},{name:'Dunkelwelle',icon:'🖤',key:'2',cd:0,maxCd:140,use:g=>burst(5,'#7c4dff',20)},{name:'Schattensturm',icon:'🌑',key:'3',cd:0,maxCd:300,use:g=>radial(14,'#7c4dff',20)},{name:'Apokalypse',icon:'💀',key:'4',cd:0,maxCd:500,use:g=>doAoe(190,95,'#7c4dff')}],init:s=>{}}
+   skills:[{name:'Schattenform',icon:'👁️',key:'1',cd:0,maxCd:260,use:g=>{g.p.invisible=150;showMsg('👁️ Schattenform!')}},{name:'Dunkelwelle',icon:'🖤',key:'2',cd:0,maxCd:140,use:g=>burst(5,'#7c4dff',20)},{name:'Schattensturm',icon:'🌑',key:'3',cd:0,maxCd:300,use:g=>radial(14,'#7c4dff',20)},{name:'Apokalypse',icon:'💀',key:'4',cd:0,maxCd:500,use:g=>doAoe(190,95,'#7c4dff')}],init:s=>{}},
+  {name:'Biest',icon:'🦁',role:'Nahkampf',hcol:'#8b4513',bpCol:'#d2691e',hp:110,spd:3.3,bColor:'#ff6b35',bDmg:32,bSpd:0,passive:'Klauenschläge im Nahkampf, kann springen',
+   skills:[{name:'Sprung',icon:'🦘',key:'1',cd:0,maxCd:180,use:g=>doJump()},{name:'Klauen-Frenzy',icon:'💥',key:'2',cd:0,maxCd:200,use:g=>doClaw(120,45,6)},{name:'Wildnis',icon:'🌲',key:'3',cd:0,maxCd:320,use:g=>doAoe(100,50,'#d2691e')},{name:'Primitives Brüllen',icon:'🔊',key:'4',cd:0,maxCd:420,use:g=>{doAoe(140,65,'#ff6b35');g.p.shielded=100;showMsg('🔊 BRÜLLEN!')}}],init:s=>{s.jumpCd=0}}
 ];
 
 // ═══════════════════════════════════════════════════════
@@ -453,7 +455,8 @@ function initGame(idx){
   let px=WW/2,py=WH/2;while(isSolid(px,py,20)){px+=30;py+=30;}
   G={hero,p:{wx:px,wy:py,hp:hero.hp,maxHp:hero.hp,spd:hero.spd,
     shielded:0,invisible:0,armor:false,regenTimer:0,shotCd:0,
-    critCount:0,dodgeCd:0,legAng:0,walkAnim:0,moving:false},
+    critCount:0,dodgeCd:0,legAng:0,walkAnim:0,moving:false,
+    jumping:false,jumpPower:0,jumpY:py},
     bullets:[],enemies:[],particles:[],keys:{},wave:1,score:0,stars:0,hits:0,damageTaken:0,lightningTimer:1200,lightningFlash:0,lightningX:0,lightningY:0,gameOver:false,won:false};
   hero.init(G);cam.x=px-W/2;cam.y=py-H/2;
   spawnWave(1);buildSkBar();updateMobileSkillLabels();updateHud();
@@ -502,6 +505,11 @@ function findNearest(){
 
 function update(){
   const p=G.p,h=G.hero;
+  // Jump-Mechanik für Biest
+  if(h.name==='Biest'&&p.jumping){
+    p.jumpPower-=0.5;
+    if(p.jumpPower<=0){p.jumping=false;p.jumpPower=0;}
+  }
   let dx=0,dy=0;
   const spd=p.spd*(p.dodgeCd>0?1.9:1);
 
@@ -522,6 +530,8 @@ function update(){
 
   const nx=Math.max(20,Math.min(WW-20,p.wx+dx)),ny=Math.max(20,Math.min(WH-20,p.wy+dy));
   if(!isSolid(nx,ny,14)){p.wx=nx;p.wy=ny;}else if(!isSolid(nx,p.wy,14)){p.wx=nx;}else if(!isSolid(p.wx,ny,14)){p.wy=ny;}
+  // Biest Jump visuals
+  // jump Y handled during draw; no per-update world-y offset here
 
   cam.x+=(p.wx-W/2-cam.x)*.1;cam.y+=(p.wy-H/2-cam.y)*.1;
   cam.x=Math.max(0,Math.min(WW-W,cam.x));cam.y=Math.max(0,Math.min(WH-H,cam.y));
@@ -623,7 +633,9 @@ function calculateStars(){
 }
 
 function firePlayerBullet(){
-  const p=G.p,h=G.hero;let dmg=h.bDmg;
+  const p=G.p,h=G.hero;
+  if(h.name==='Biest'){doClaw(75,32,2);return;}
+  let dmg=h.bDmg;
   if(h.name==='Starlance'){p.critCount++;if(p.critCount>=3){dmg=Math.round(dmg*1.5);p.critCount=0;}}
   G.bullets.push({wx:p.wx,wy:p.wy,ang:aimAng,spd:h.bSpd,dmg,friendly:true,col:h.bColor,burn:h.name==='Pyra',slow:h.name==='Glacius'});
 }
@@ -724,7 +736,8 @@ function draw(){
   });
   [...G.enemies].sort((a,b)=>a.wy-b.wy).forEach(e=>{if(sxf(e.wx)>-50&&sxf(e.wx)<W+50&&syf(e.wy)>-50&&syf(e.wy)<H+50)drawEnemy(e);});
   const p=G.p;
-  drawAvatar(sxf(p.wx),syf(p.wy),aimAng,G.hero.hcol,G.hero.bpCol,p.invisible>0,p.shielded,p.legAng,G.hero.icon);
+  const vertOff = (p.jumping && p.jumpPower)? p.jumpPower*3 : 0;
+  drawAvatar(sxf(p.wx),syf(p.wy - vertOff),aimAng,G.hero.hcol,G.hero.bpCol,p.invisible>0,p.shielded,p.legAng,G.hero.icon);
   // aim line (desktop only)
   if(!isMobile&&mDown.l){C.save();C.strokeStyle=G.hero.bColor;C.lineWidth=1;C.globalAlpha=.25;C.setLineDash([5,6]);C.beginPath();C.moveTo(sxf(p.wx),syf(p.wy));C.lineTo(sxf(p.wx)+Math.cos(aimAng)*300,syf(p.wy)+Math.sin(aimAng)*300);C.stroke();C.restore();}
   // crosshair (desktop only)
@@ -741,6 +754,24 @@ function draw(){
 // ═══════════════════════════════════════════════════════
 // SKILL HELPERS
 // ═══════════════════════════════════════════════════════
+function doClaw(rng,dmg,shakes){
+  const p=G.p;let hitCnt=0;
+  G.enemies.forEach(e=>{
+    if(Math.hypot(p.wx-e.wx,p.wy-e.wy)<rng){
+      e.hp-=dmg;parts(e.wx,e.wy,'#ff6b35',10);
+      hitCnt++;
+    }
+  });
+  G.enemies=G.enemies.filter(e=>{if(e.hp<=0){G.score+=10;return false;}return true;});
+  if(hitCnt>0)for(let i=0;i<20;i++){const a=Math.random()*Math.PI*2;parts(p.wx+Math.cos(a)*rng*.6,p.wy+Math.sin(a)*rng*.6,'#ff6b35',1);}
+  if(hitCnt)showMsg('🦁 '+hitCnt+' Treffer!');
+}
+function doJump(){
+  const p=G.p,h=G.hero;
+  p.jumpPower=18;p.jumping=true;
+  showMsg('🦘 SPRUNG!');
+  for(let i=0;i<15;i++){const a=Math.random()*Math.PI*2;parts(p.wx+Math.cos(a)*30,p.wy+Math.sin(a)*30,'#d2691e',1);}
+}
 function burst(n,col,dmg){for(let i=0;i<n;i++){const sp=(Math.random()-.5)*.35;G.bullets.push({wx:G.p.wx,wy:G.p.wy,ang:aimAng+sp,spd:G.hero.bSpd+1,dmg,friendly:true,col});}}
 function bigShot(col,dmg,spd){G.bullets.push({wx:G.p.wx,wy:G.p.wy,ang:aimAng,spd,dmg,friendly:true,col,pierce:true});}
 function radial(n,col,dmg){for(let i=0;i<n;i++){G.bullets.push({wx:G.p.wx,wy:G.p.wy,ang:(i/n)*Math.PI*2,spd:G.hero.bSpd,dmg,friendly:true,col});}}
