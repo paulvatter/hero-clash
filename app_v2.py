@@ -193,9 +193,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <!-- Hero selection -->
     <div id="sel">
       <h2>⚡ HERO CLASH ⚡</h2>
-      <div class="hint">Wähle deinen Helden · Mobile: Joystick + Tasten · PC: WASD, LMB zielen, RMB schiessen</div>
+      <div class="hint">Wähle deinen Helden · Nächster Held nach 2 Siegen · Mobile: Joystick + Tasten · PC: WASD, LMB zielen, RMB schiessen</div>
       <div id="hgrid"></div>
-      <div id="ptxt">Wähle einen Helden</div>
+      <div id="ptxt">Nächster Held nach 2 Siegen</div>
       <button id="gobtn" onclick="startGame()">⚡ Spiel starten</button>
     </div>
   </div>
@@ -392,7 +392,7 @@ let G={},selIdx=null,animId=null,unlockedHeroes=new Set([0]),totalVictories=0;
 
 function checkHeroUnlocks(){
   const nextHeroIndex=unlockedHeroes.size;
-  const winsNeeded=nextHeroIndex*3;
+  const winsNeeded=nextHeroIndex*2;
   if(totalVictories>=winsNeeded&&nextHeroIndex<HEROES.length){
     unlockedHeroes.add(nextHeroIndex);
     showMsg('🔓 Neuer Held freigeschaltet: '+HEROES[nextHeroIndex].name+'!');
@@ -404,6 +404,7 @@ function openSel(){
   mDown.l=false;mDown.r=false;if(G&&G.keys)G.keys={};
   joyEnd();mobileShoot=false;
   document.getElementById('sel').style.display='flex';
+  document.getElementById('ptxt').textContent='Nächster Held nach 2 Siegen';
   buildGrid();
 }
 function buildGrid(){
@@ -411,7 +412,7 @@ function buildGrid(){
   HEROES.forEach((h,i)=>{
     const unlocked=unlockedHeroes.has(i);
     const cc=document.createElement('div');cc.className='hcard'+(unlocked?'':' locked');if(i===selIdx&&unlocked)cc.classList.add('sel');
-    cc.innerHTML='<div class="ci" style="'+(unlocked?'':'opacity:.4')+'">'+h.icon+'</div><div class="cn">'+h.name+'</div><div class="cr">'+h.role+'</div>'+(unlocked?'':`<div style="font-size:6px;color:#aaa;margin-top:2px">${i*3} Siege</div>`);
+    cc.innerHTML='<div class="ci" style="'+(unlocked?'':'opacity:.4')+'">'+h.icon+'</div><div class="cn">'+h.name+'</div><div class="cr">'+h.role+'</div>'+(unlocked?'':`<div style="font-size:6px;color:#aaa;margin-top:2px">${i*2} Siege</div>`);
     if(unlocked)cc.onclick=()=>{document.querySelectorAll('.hcard').forEach(x=>x.classList.remove('sel'));cc.classList.add('sel');selIdx=i;document.getElementById('ptxt').textContent='⚡ '+h.passive;document.getElementById('gobtn').classList.add('active');}
     else cc.style.opacity='0.5';
     g.appendChild(cc);
