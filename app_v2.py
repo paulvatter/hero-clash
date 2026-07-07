@@ -1,5 +1,9 @@
+import os
+import requests
 import streamlit as st
 import streamlit.components.v1 as components
+
+API_BASE_URL = os.getenv("HERO_CLASH_API_URL", "http://127.0.0.1:8001")
 
 st.set_page_config(page_title="Hero Clash", page_icon="⚡", layout="wide")
 
@@ -11,6 +15,147 @@ st.markdown("""
     footer { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
+
+if "auth_token" not in st.session_state:
+    st.session_state.auth_token = None
+if "account" not in st.session_state:
+    st.session_state.account = None
+if "auth_mode" not in st.session_state:
+    st.session_state.auth_mode = "login"
+if "store_items" not in st.session_state:
+    st.session_state.store_items = None
+if "auth_panel_open" not in st.session_state:
+    st.session_state.auth_panel_open = True
+
+
+def api_request(method, endpoint, token=None, json_body=None, data=None):
+    url = f"{API_BASE_URL}{endpoint if endpoint.startswith('/') else '/'+endpoint}"
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        response = requests.request(method, url, headers=headers, json=json_body, data=data, timeout=6)
+        if response.status_code >= 400:
+            try:
+                error = response.json().get("detail", response.text)
+            except ValueError:
+                error = response.text
+            return False, error
+        return True, response.json() if response.text else None
+    except requests.exceptions.RequestException as exc:
+        return False, f"Backend nicht erreichbar: {exc}"
+
+
+def register_with_backend(username, password):
+    return api_request("POST", "/register", json_body={"username": username, "password": password})
+
+
+def login_with_backend(username, password):
+    return api_request("POST", "/token", data={"username": username, "password": password})
+
+
+def fetch_current_account(token):
+    return api_request("GET", "/me", token=token)
+
+
+def fetch_store_items():
+    return api_request("GET", "/store")
+
+
+def buy_store_item(token, item):
+    return api_request("POST", "/buy", token=token, json_body={"item": item})
+
+
+if st.session_state.auth_token and st.session_state.account is None:
+    ok, account_or_error = fetch_current_account(st.session_state.auth_token)
+    if ok:
+        st.session_state.account = account_or_error
+    else:
+        st.session_state.auth_token = None
+        st.sidebar.warning("Session abgelaufen. Bitte erneut anmelden.")
+
+
+def show_account_panel(panel):
+    panel.header("Spieler-Account")
+    panel.caption("Login und Store über das Backend")
+    if st.session_state.account is None:
+        mode = panel.radio("Aktion", ["Anmelden", "Registrieren"], horizontal=True)
+        st.session_state.auth_mode = "login" if mode == "Anmelden" else "register"
+
+        username = panel.text_input("Benutzername")
+        password = panel.text_input("Passwort", type="password")
+        if panel.button("Los geht's"):
+            if st.session_state.auth_mode == "login":
+                ok, result = login_with_backend(username, password)
+                if ok:
+                    token = result.get("access_token")
+                    st.session_state.auth_token = token
+                    ok2, account_data = fetch_current_account(token)
+                    if ok2:
+                        st.session_state.account = account_data
+                        panel.success("Erfolgreich angemeldet")
+                        st.rerun()
+                    else:
+                        panel.error(account_data)
+                else:
+                    panel.error(result)
+            else:
+                ok, result = register_with_backend(username, password)
+                if ok:
+                    token_ok, token_result = login_with_backend(username, password)
+                    if token_ok:
+                        st.session_state.auth_token = token_result.get("access_token")
+                        ok2, account_data = fetch_current_account(st.session_state.auth_token)
+                        if ok2:
+                            st.session_state.account = account_data
+                            panel.success("Account erstellt und angemeldet")
+                            st.rerun()
+                        else:
+                            panel.error(account_data)
+                    else:
+                        panel.error(token_result)
+                else:
+                    panel.error(result)
+    else:
+        panel.success(f"Angemeldet als {st.session_state.account['username']}")
+        panel.write(f"Coins: {st.session_state.account.get('coins', 0)}")
+        panel.write(f"Siege: {st.session_state.account.get('wins', 0)}")
+        if panel.button("Abmelden"):
+            st.session_state.account = None
+            st.session_state.auth_token = None
+            st.session_state.auth_mode = "login"
+            st.rerun()
+
+        panel.subheader("Store")
+        if st.session_state.store_items is None:
+            ok, store_data = fetch_store_items()
+            if ok:
+                st.session_state.store_items = store_data
+            else:
+                panel.error(store_data)
+                st.session_state.store_items = []
+
+        for item in st.session_state.store_items:
+            col1, col2 = panel.columns([2, 1])
+            col1.write(f"{item['name']} — {item['description']}")
+            if col2.button("Kauf", key=f"buy_{item['name']}"):
+                if st.session_state.account.get("coins", 0) >= item["price"]:
+                    ok, result = buy_store_item(st.session_state.auth_token, item["name"])
+                    if ok:
+                        st.session_state.account.update({"coins": result["coins"], "store_unlocks": result["store_unlocks"]})
+                        panel.success(result["message"])
+                    else:
+                        panel.error(result)
+                else:
+                    panel.warning("Nicht genug Coins")
+
+
+if st.button("Account öffnen" if not st.session_state.auth_panel_open else "Account ausblenden"):
+    st.session_state.auth_panel_open = not st.session_state.auth_panel_open
+
+if st.session_state.auth_panel_open:
+    with st.expander("Spieler-Account", expanded=True):
+        show_account_panel(st)
 
 GAME_HTML = r"""
 <!DOCTYPE html>

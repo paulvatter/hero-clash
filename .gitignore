@@ -12,6 +12,9 @@ env/
 # VS Code settings
 .vscode/
 
+# Local app data
+/data/
+
 # Distribution / packaging
 build/
 dist/
