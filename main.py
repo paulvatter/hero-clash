@@ -1,4 +1,5 @@
 import os
+import sys
 from datetime import datetime, timedelta
 from typing import List, Optional
 
@@ -11,6 +12,9 @@ from passlib.context import CryptContext
 from db import SessionLocal, engine
 import models
 import schemas
+
+if os.path.dirname(__file__) not in sys.path:
+    sys.path.insert(0, os.path.dirname(__file__))
 
 models.Base.metadata.create_all(bind=engine)
 
