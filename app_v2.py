@@ -156,9 +156,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <span style="font-size:10px;color:#aaa;display:flex;gap:5px">
       <span>⭐<span id="score">0</span></span>
       <span id="star-display">🌟<span id="star-count">0</span></span>
-      <span>W<span id="wave">1</span>/3</span>
+      <span>W<span id="wave">1</span>/5</span>
       <span>👾<span id="ecount">0</span></span>
     </span>
+    <button id="toggle-autoaim" onclick="toggleAutoAim()" title="Auto-Aim ein-/ausschalten" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#ffd700;cursor:pointer">🎯 Auto-Aim: An</button>
     <button onclick="openSel()" style="margin-left:auto;font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#777;cursor:pointer">↺ Held</button>
     <button id="toggle-mobile" onclick="applyMobileMode(!isMobile)" title="Mobile/PC umschalten" style="font-size:11px;padding:2px 7px;border-radius:5px;border:1px solid rgba(255,255,255,.15);background:transparent;color:#aaa;cursor:pointer">📱</button>
   </div>
@@ -217,7 +218,7 @@ function resizeCanvas(){
 window.addEventListener('resize',()=>{resizeCanvas();if(G&&G.p)cam.x=G.p.wx-W/2,cam.y=G.p.wy-H/2;});
 resizeCanvas();
 
-const WW=2400,WH=1800,MAX_WAVES=3;
+const WW=2400,WH=1800,MAX_WAVES=5;
 
 // ═══════════════════════════════════════════════════════
 // TOUCH DETECTION — show mobile controls
@@ -233,7 +234,15 @@ function applyMobileMode(on) {
   document.getElementById('mobile-controls').style.display = on ? 'block' : 'none';
   document.getElementById('skbar-wrap').style.display    = on ? 'none'  : 'flex';
 }
+let autoAimEnabled=true;
+function setAutoAim(enabled){
+  autoAimEnabled=enabled;
+  const btn=document.getElementById('toggle-autoaim');
+  if(btn){btn.textContent=autoAimEnabled?'🎯 Auto-Aim: An':'🎯 Auto-Aim: Aus';btn.style.color=autoAimEnabled?'#ffd700':'#aaa';}
+}
+function toggleAutoAim(){setAutoAim(!autoAimEnabled);showMsg(autoAimEnabled?'🎯 Auto-Aim aktiviert':'🎯 Auto-Aim deaktiviert');}
 applyMobileMode(isMobile);
+setAutoAim(autoAimEnabled);
 
 // ═══════════════════════════════════════════════════════
 // JOYSTICK
@@ -537,11 +546,11 @@ function update(){
   cam.x+=(p.wx-W/2-cam.x)*.1;cam.y+=(p.wy-H/2-cam.y)*.1;
   cam.x=Math.max(0,Math.min(WW-W,cam.x));cam.y=Math.max(0,Math.min(WH-H,cam.y));
 
-  // ── Aim: mouse OR nearest enemy (mobile) ──
-  if(isMobile){
+  // ── Aim: auto-target or mouse aim ──
+  if(autoAimEnabled){
     const near=findNearest();
     if(near)aimAng=Math.atan2(near.wy-p.wy,near.wx-p.wx);
-  } else {
+  } else if(!isMobile){
     aimAng=Math.atan2(mY-(p.wy-cam.y),mX-(p.wx-cam.x));
   }
 
@@ -782,7 +791,7 @@ function doBlackHole(){const p=G.p;G.enemies.forEach(e=>{const a=Math.atan2(p.wy
 function doDrain(){const p=G.p;let tot=0;G.enemies.forEach(e=>{if(Math.hypot(p.wx-e.wx,p.wy-e.wy)<90){e.hp-=35;tot+=17;parts(e.wx,e.wy,'#ce93d8',5);}});G.enemies=G.enemies.filter(e=>{if(e.hp<=0){G.score+=10;return false;}return true;});p.hp=Math.min(p.maxHp,p.hp+tot);if(tot)showMsg('💜 +'+tot+' HP!');}
 function doLaser(){const p=G.p;for(let d=0;d<230;d+=8){const lx=p.wx+Math.cos(aimAng)*d,ly=p.wy+Math.sin(aimAng)*d;G.enemies.forEach(e=>{if(Math.hypot(lx-e.wx,ly-e.wy)<12){e.hp-=4;parts(lx,ly,'#ffe082',2);}});}G.enemies=G.enemies.filter(e=>{if(e.hp<=0){G.score+=10;return false;}return true;});}
 function parts(wx2,wy2,col,n){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s=1+Math.random()*2.5;G.particles.push({wx:wx2,wy:wy2,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:1.5+Math.random()*3,col,life:10+Math.random()*15,maxLife:18});}}
-function showMsg(t){const m=document.getElementById('msg');m.textContent=t;m.style.opacity='1';clearTimeout(G._mt);G._mt=setTimeout(()=>m.style.opacity='0',1400);}
+function showMsg(t){const m=document.getElementById('msg');m.textContent=t;m.style.opacity='1';if(G&&G._mt)clearTimeout(G._mt);if(G)G._mt=setTimeout(()=>m.style.opacity='0',1400);else setTimeout(()=>m.style.opacity='0',1400);}
 function updateHud(){
   const p=G.p;
   document.getElementById('hpfill').style.width=(p.hp/p.maxHp*100)+'%';
